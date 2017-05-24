@@ -2,28 +2,6 @@ version: '2'
 
 services:
 
-### Workspace Utilities Container ###########################
-
-    # workspace:
-    #     build:
-    #         context: ./workspace
-    #         args:
-    #             - INSTALL_XDEBUG=false
-    #             - INSTALL_MONGO=false
-    #             - INSTALL_NODE=false
-    #             - INSTALL_DRUSH=false
-    #             - COMPOSER_GLOBAL_INSTALL=false
-    #             - INSTALL_WORKSPACE_SSH=false
-    #             - PUID=1000
-    #             - PGID=1000
-    #             - NODE_VERSION=stable
-    #     volumes_from:
-    #         - volumes_source
-    #     extra_hosts:
-    #         # IMPORTANT: Replace with your Docker Host IP (will be appended to /etc/hosts)
-    #         - "dockerhost:10.0.75.1"
-    #     tty: true
-
 ### PHP-FPM Container #######################################
 
     php-fpm:
@@ -48,8 +26,8 @@ services:
         environment:
             # IMPORTANT: Set the Remote Interpreter entry matching name to `laravel`
             - PHP_IDE_CONFIG="serverName=symfony.dev"
-        links:
-            - "mysql:local.mysql"
+        networks: 
+            - "backend"
 
 ### MySQL Container #########################################
 
@@ -60,10 +38,12 @@ services:
         ports:
             - "3306:3306"
         environment:
-            MYSQL_DATABASE: symfony
-            MYSQL_USER: symfony
-            MYSQL_PASSWORD: secret
-            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
+            MYSQL_USER: ${MYSQL_USER}
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+        networks: 
+            - "backend"
 
 ### Nginx Server Container ##################################
 
@@ -79,15 +59,15 @@ services:
         ports:
             - "80:80"
             - "443:443"
-        links:
-            - php-fpm
+        networks: 
+            - "backend"
 
 ### symfony Application Code Container ######################
 
     volumes_source:
         image: tianon/true
         volumes:
-            - ../my_framework:/var/www/symfony
+            - ${PROJECT_ROOT}:/var/www/symfony
             # Demonstration of how to mount multiple sites
             # - ../../site_a/:/var/www/site_a
             # - ../../site_b/:/var/www/site_b
@@ -104,3 +84,8 @@ services:
             - ./data/neo4j:/var/lib/neo4j/data
             - ./data/mongo:/data/db
             - ./data/sessions:/sessions
+
+### Networks ################################################
+networks: 
+    backend:
+        driver: "bridge"
